@@ -48,13 +48,48 @@ regd_users.post("/login", (req,res) => {
 
 // Add a book review
 regd_users.put("/auth/review/:isbn", (req, res) => {
-  const username = req.session.username;
+  const username = req.session.authorization.username;
   const review = req.body.review;
   const isbn = req.params.isbn;
-  const bookReview = books[isbn].reviews;
+  if (books[isbn]) {
+    // Check if the reviewer has already posted a review
+    let existingReviewKey = null;
+    for (let key in books[isbn].reviews) {
+      if (key === username) {
+        existingReviewKey = key;
+        break;
+      }
+    }
+    // Add or update the review
+    if (existingReviewKey) {
+      books[isbn].reviews[existingReviewKey] = review;
+      res.status(200).send("Review updated");
+    } 
+    else {
+      books[isbn].reviews[username] = review;
+      res.status(200).send("Review added");
+    }
+  }
+  else{
+      res.send("Please Provide a valid ID");
+  }
+});
 
-  
-
+regd_users.delete("/auth/review/:isbn", (req, res) => {
+    const username = req.session.authorization.username;
+    const isbn = req.params.isbn;
+    if (books[isbn]){
+        for (let key in books[isbn].reviews) {
+          if (key === username) {
+              delete books[isbn].reviews[key];
+              res.status(200).send("Review removed");
+              break;
+          }
+        }
+      }
+      else{
+          res.send("Please Provide a valid ID");
+      }
 });
 
 module.exports.authenticated = regd_users;
